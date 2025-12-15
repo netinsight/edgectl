@@ -23,7 +23,7 @@ uuid = { version = "1.19.0", features = [ "v4" ] }
 ratatui = "0.29"
 rpassword = "7.3"
 crossterm = "0.29.0"
-serde-saphyr = "0.0.10"
+serde-saphyr = "0.0.11"
 unicode-width = "0.2.0"
 gethostname = "1.1.0"
 ratatui-image = { version = "8.0", default-features = false, features = ["crossterm"] }
