@@ -24,7 +24,7 @@ mod tunnels;
 use std::{env, process};
 
 use clap_complete::CompleteEnv;
-use edge::EdgeClient;
+use edge::{load_client, EdgeClient};
 
 fn main() {
     CompleteEnv::with_factory(cli::build)
@@ -56,11 +56,15 @@ fn main() {
             }
         }
         Some(("build-info", _)) => {
-            let client = EdgeClient::with_url(
-                env::var("EDGE_URL")
-                    .expect("missing environment variable: EDGE_URL")
-                    .as_ref(),
-            );
+            let client = load_client().unwrap_or_else(|_| {
+                // Allow build-info in case the password is unknown, as the endpoint doesn't
+                // require authentication
+                let url = env::var("EDGE_URL").unwrap_or_else(|_| {
+                    eprintln!("Missing environment variable: EDGE_URL");
+                    process::exit(1);
+                });
+                EdgeClient::with_url(&url)
+            });
             buildinfo::show(client)
         }
         Some((cmd, _)) => {

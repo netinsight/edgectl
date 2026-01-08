@@ -8,38 +8,40 @@ use std::collections::BTreeMap;
 use crate::config::Config;
 
 pub fn new_client() -> EdgeClient {
+    match load_client() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("{}", e);
+            process::exit(1);
+        }
+    }
+}
+
+pub fn load_client() -> anyhow::Result<EdgeClient> {
     let config = Config::load();
 
     let url = env::var("EDGE_URL")
         .ok()
         .or_else(|| config.get_current_context().map(|c| c.url.clone()))
-        .unwrap_or_else(|| {
-            eprintln!("No URL provided, either via config or env var. Try:");
-            eprintln!("edgectl login");
-            process::exit(1);
-        });
+        .ok_or_else(|| {
+            anyhow::anyhow!("No URL provided, either via config or env var. Try:\nedgectl login")
+        })?;
 
     if let Ok(password) = env::var("EDGE_PASSWORD") {
         let client = EdgeClient::with_url(&url);
         let username = env::var("EDGE_USER").unwrap_or_else(|_| "admin".to_owned());
-
-        if let Err(e) = client.login(username, password) {
-            eprintln!("Failed to authenticate: {}", e);
-            process::exit(1);
-        }
-
-        return client;
+        client.login(username, password)?;
+        return Ok(client);
     }
 
     let token = env::var("EDGE_TOKEN")
         .ok()
         .or_else(|| config.get_current_context().map(|c| c.token.clone()))
-        .unwrap_or_else(|| {
-            eprintln!("No credentials found. Run 'edgectl login' to authenticate.");
-            process::exit(1);
-        });
+        .ok_or_else(|| {
+            anyhow::anyhow!("No credentials found. Run 'edgectl login' to authenticate.")
+        })?;
 
-    EdgeClient::with_url_and_token(&url, &token)
+    Ok(EdgeClient::with_url_and_token(&url, &token))
 }
 
 pub struct EdgeClient {
