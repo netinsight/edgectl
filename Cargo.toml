@@ -13,7 +13,7 @@ clap_complete = { version = "4.5.62", features = ["unstable-dynamic"] }
 dirs = "6.0"
 humantime = "2.1"
 openssl = { version = "0.10.75", features = ["vendored"] } # vendor openssl to enable static builds
-reqwest = { version = "0.12.24", features = ["blocking", "json", "cookies"] }
+reqwest = { version = "0.12.26", features = ["blocking", "json", "cookies"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
 tabled = "0.20.0"
@@ -23,8 +23,8 @@ uuid = { version = "1.19.0", features = [ "v4" ] }
 ratatui = "0.29"
 rpassword = "7.3"
 crossterm = "0.29.0"
-serde-saphyr = "0.0.10"
+serde-saphyr = "0.0.11"
 unicode-width = "0.2.0"
 gethostname = "1.1.0"
-ratatui-image = { version = "8.0", default-features = false, features = ["crossterm"] }
+ratatui-image = { version = "8.1", default-features = false, features = ["crossterm"] }
 image = { version = "0.25", default-features = false, features = ["jpeg"] }
