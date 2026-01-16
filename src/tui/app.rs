@@ -408,13 +408,14 @@ impl App {
 
         let Some(input) = input else { return };
 
+        // Create picker once outside the loop to avoid expensive terminal queries per thumbnail
+        let picker = Picker::from_query_stdio().unwrap_or_else(|_| Picker::halfblocks());
+
         match input.thumbnail_mode {
             ThumbnailMode::Core => {
                 let path = format!("thumb/{}", input.id);
                 if let Some(bytes) = self.client.fetch_thumbnail(&path) {
                     if let Ok(img) = image::load_from_memory(&bytes) {
-                        let picker =
-                            Picker::from_query_stdio().unwrap_or_else(|_| Picker::halfblocks());
                         let protocol = picker.new_resize_protocol(img);
                         self.thumbnails.push(ThumbnailEntry {
                             protocol,
@@ -430,8 +431,6 @@ impl App {
                         let path = format!("thumbnailer/{}", channel.channel_id);
                         if let Some(bytes) = self.client.fetch_thumbnail(&path) {
                             if let Ok(img) = image::load_from_memory(&bytes) {
-                                let picker = Picker::from_query_stdio()
-                                    .unwrap_or_else(|_| Picker::halfblocks());
                                 let protocol = picker.new_resize_protocol(img);
                                 self.thumbnails.push(ThumbnailEntry {
                                     protocol,
