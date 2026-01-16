@@ -413,8 +413,8 @@ impl App {
                 let path = format!("thumb/{}", input.id);
                 if let Some(bytes) = self.client.fetch_thumbnail(&path) {
                     if let Ok(img) = image::load_from_memory(&bytes) {
-                        let picker = Picker::from_query_stdio()
-                            .unwrap_or_else(|_| Picker::from_fontsize((8, 16)));
+                        let picker =
+                            Picker::from_query_stdio().unwrap_or_else(|_| Picker::halfblocks());
                         let protocol = picker.new_resize_protocol(img);
                         self.thumbnails.push(ThumbnailEntry {
                             protocol,
@@ -431,7 +431,7 @@ impl App {
                         if let Some(bytes) = self.client.fetch_thumbnail(&path) {
                             if let Ok(img) = image::load_from_memory(&bytes) {
                                 let picker = Picker::from_query_stdio()
-                                    .unwrap_or_else(|_| Picker::from_fontsize((8, 16)));
+                                    .unwrap_or_else(|_| Picker::halfblocks());
                                 let protocol = picker.new_resize_protocol(img);
                                 self.thumbnails.push(ThumbnailEntry {
                                     protocol,
