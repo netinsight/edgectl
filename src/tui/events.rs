@@ -29,7 +29,10 @@ pub fn run_event_loop(mut app: App) -> Result<()> {
     result
 }
 
-fn run_app<B: ratatui::backend::Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<()> {
+fn run_app<B: ratatui::backend::Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<()>
+where
+    <B as ratatui::backend::Backend>::Error: Send + Sync,
+{
     loop {
         // Draw UI
         terminal.draw(|f| draw_ui(f, app))?;
