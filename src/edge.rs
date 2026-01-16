@@ -725,6 +725,7 @@ pub struct ApplianceVersion {
     pub control_software_version: String,
     pub data_image_version: Option<String>,
     pub data_software_version: Option<String>,
+    pub va_version: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

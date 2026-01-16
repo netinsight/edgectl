@@ -11,7 +11,16 @@ pub(crate) fn subcommand() -> clap::Command {
     Command::new("appliance")
         .about("Manage appliances")
         .subcommand_required(true)
-        .subcommand(Command::new("list"))
+        .subcommand(
+            Command::new("list").arg(
+                Arg::new("output")
+                    .long("output")
+                    .short('o')
+                    .value_parser(["short", "wide"])
+                    .default_value("short")
+                    .help("Change the output format"),
+            ),
+        )
         .subcommand(
             Command::new("show").arg(
                 Arg::new("name")
@@ -59,9 +68,17 @@ pub(crate) fn subcommand() -> clap::Command {
 
 pub(crate) fn run(subcmd: &ArgMatches) {
     match subcmd.subcommand() {
-        Some(("list", _)) | None => {
+        Some(("list", args)) => {
             let client = new_client();
-            list(client)
+            let wide = args
+                .get_one::<String>("output")
+                .map(|s| s == "wide")
+                .unwrap_or(false);
+            list(client, wide)
+        }
+        None => {
+            let client = new_client();
+            list(client, false)
         }
         Some(("show", args)) => {
             let client = new_client();
@@ -144,23 +161,49 @@ impl fmt::Display for AppliancePortType {
     }
 }
 
-fn list(client: EdgeClient) {
+fn list(client: EdgeClient, wide: bool) {
     let appliances = client
         .list_appliances()
         .expect("Failed to fetch appliance list");
 
     let mut builder = Builder::default();
-    builder.push_record(["Name", "ID", "Type", "State"]);
-    for appliance in appliances {
+    if wide {
         builder.push_record([
-            appliance.name,
-            appliance.id,
-            appliance.kind,
-            appliance
-                .health
-                .map(|h| h.state.to_string())
-                .unwrap_or("unknown".to_owned()),
-        ])
+            "Name",
+            "ID",
+            "Type",
+            "Control Image",
+            "Control Software",
+            "Data Image",
+            "Data Software",
+            "VA Version",
+            "Last Seen",
+            "State",
+        ]);
+    } else {
+        builder.push_record(["Name", "ID", "Type", "State"]);
+    }
+    for appliance in appliances {
+        let state = appliance
+            .health
+            .map(|h| h.state.to_string())
+            .unwrap_or("unknown".to_owned());
+        if wide {
+            builder.push_record([
+                appliance.name,
+                appliance.id,
+                appliance.kind,
+                appliance.version.control_image_version.unwrap_or_default(),
+                appliance.version.control_software_version,
+                appliance.version.data_image_version.unwrap_or_default(),
+                appliance.version.data_software_version.unwrap_or_default(),
+                appliance.version.va_version.unwrap_or_default(),
+                appliance.last_registered_at.unwrap_or_default(),
+                state,
+            ]);
+        } else {
+            builder.push_record([appliance.name, appliance.id, appliance.kind, state]);
+        }
     }
 
     let mut table = builder.build();
