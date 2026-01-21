@@ -13,7 +13,7 @@ clap_complete = { version = "4.5.62", features = ["unstable-dynamic"] }
 dirs = "6.0"
 humantime = "2.1"
 openssl = { version = "0.10.75", features = ["vendored"] } # vendor openssl to enable static builds
-reqwest = { version = "0.12.26", features = ["blocking", "json", "cookies"] }
+reqwest = { version = "0.13.1", features = ["blocking", "json", "cookies"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
 tabled = "0.20.0"
