@@ -1033,6 +1033,13 @@ pub struct RegionReference {
     pub name: String,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateAppliancePayload {
+    pub region: RegionReference,
+    pub secondary_region: Option<RegionReference>,
+}
+
 #[derive(Debug, Clone)]
 pub enum ExternalRegionMode {
     Core = 0,
@@ -1994,6 +2001,20 @@ impl EdgeClient {
     pub fn restart_appliance(&self, id: &str) -> Result<(), EdgeError> {
         self.client
             .post(format!("{}/api/appliance/{}/restart", self.url, id))
+            .send()?
+            .error_if_not_success()
+            .map(|_| ())
+    }
+
+    pub fn update_appliance(
+        &self,
+        id: &str,
+        payload: UpdateAppliancePayload,
+    ) -> Result<(), EdgeError> {
+        self.client
+            .post(format!("{}/api/appliance/{}", self.url, id))
+            .header("content-type", "application/json")
+            .json(&payload)
             .send()?
             .error_if_not_success()
             .map(|_| ())

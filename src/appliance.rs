@@ -4,7 +4,10 @@ use anyhow::{anyhow, Context};
 use clap::{Arg, ArgMatches, Command};
 use tabled::{builder::Builder, settings::Style};
 
-use crate::edge::{new_client, Appliance, ApplianceHealthState, AppliancePortType, EdgeClient};
+use crate::edge::{
+    new_client, Appliance, ApplianceHealthState, AppliancePortType, EdgeClient, RegionReference,
+    UpdateAppliancePayload,
+};
 use crate::{green, red};
 
 pub(crate) fn subcommand() -> clap::Command {
@@ -63,6 +66,21 @@ pub(crate) fn subcommand() -> clap::Command {
                     .required(true)
                     .help("The name of the appliance"),
             ),
+        )
+        .subcommand(
+            Command::new("update")
+                .about("Update appliance settings")
+                .arg(
+                    Arg::new("name")
+                        .required(true)
+                        .help("The name of the appliance"),
+                )
+                .arg(Arg::new("region").long("region").help("The primary region"))
+                .arg(
+                    Arg::new("secondary-region")
+                        .long("secondary-region")
+                        .help("The secondary region (use empty string \"\" to clear)"),
+                ),
         )
 }
 
@@ -135,6 +153,18 @@ pub(crate) fn run(subcmd: &ArgMatches) {
                 .map(|s| s.as_str())
                 .expect("Appliance name is mandatory");
             restart(client, name)
+        }
+        Some(("update", args)) => {
+            let client = new_client();
+            let name = args
+                .get_one::<String>("name")
+                .map(|s| s.as_str())
+                .expect("Appliance name is mandatory");
+            let region = args.get_one::<String>("region").map(|s| s.as_str());
+            let secondary_region = args
+                .get_one::<String>("secondary-region")
+                .map(|s| s.as_str());
+            update(client, name, region, secondary_region)
         }
         _ => unreachable!("subcommand_required prevents `None` or other options"),
     }
@@ -422,4 +452,75 @@ fn get_appliance(client: &EdgeClient, name: &str) -> Appliance {
             process::exit(1);
         }
     }
+}
+
+fn update(
+    client: EdgeClient,
+    name: &str,
+    region_arg: Option<&str>,
+    secondary_region_arg: Option<&str>,
+) {
+    if region_arg.is_none() && secondary_region_arg.is_none() {
+        eprintln!("At least one of --region or --secondary-region must be specified");
+        process::exit(1);
+    }
+
+    let appliance = get_appliance(&client, name);
+
+    let region = match region_arg {
+        Some(region_name) => {
+            let r = get_region(&client, region_name);
+            RegionReference {
+                id: r.id,
+                name: r.name,
+            }
+        }
+        None => appliance.region.clone(),
+    };
+
+    let secondary_region = match secondary_region_arg {
+        None => appliance.secondary_region.clone(),
+        Some("") => None,
+        Some(sec_name) => {
+            let r = get_region(&client, sec_name);
+            Some(RegionReference {
+                id: r.id,
+                name: r.name,
+            })
+        }
+    };
+
+    let payload = UpdateAppliancePayload {
+        region,
+        secondary_region,
+    };
+
+    if let Err(e) = client.update_appliance(&appliance.id, payload) {
+        eprintln!("Failed to update appliance: {}", e);
+        process::exit(1);
+    }
+}
+
+fn get_region(client: &EdgeClient, name: &str) -> crate::edge::Region {
+    let regions = match client.find_region(name) {
+        Ok(r) => r,
+        Err(e) => {
+            eprintln!("Failed to look up region: {}", e);
+            process::exit(1);
+        }
+    };
+
+    if regions.is_empty() {
+        eprintln!("Region '{}' not found", name);
+        process::exit(1);
+    }
+
+    for region in regions {
+        if region.name == name {
+            return region;
+        }
+    }
+
+    eprintln!("Region '{}' not found", name);
+    process::exit(1);
 }
