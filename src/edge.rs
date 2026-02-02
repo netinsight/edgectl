@@ -694,7 +694,8 @@ pub struct Appliance {
     pub last_registered_at: Option<String>, // iso8601/rfc3339
     pub health: Option<ApplianceHealth>,
     pub physical_ports: Vec<AppliancePhysicalPort>,
-    // region { id, name }
+    pub region: RegionReference,
+    pub secondary_region: Option<RegionReference>,
     #[serde(rename = "type")]
     pub kind: String,
     // owner is the group id
@@ -1023,6 +1024,13 @@ pub struct Region {
 pub struct NewRegion {
     pub name: String,
     pub external: ExternalRegionMode,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RegionReference {
+    pub id: String,
+    pub name: String,
 }
 
 #[derive(Debug, Clone)]

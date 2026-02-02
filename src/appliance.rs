@@ -244,6 +244,10 @@ fn show(client: EdgeClient, name: &str) {
         println!("Product name;         {}", appliance.kind); // TODO: Pretty-print
         println!("Serial number:        {}", appliance.serial);
         println!("Group:                {}", group_name);
+        println!("Region:               {}", appliance.region.name);
+        if let Some(ref sec) = appliance.secondary_region {
+            println!("Secondary Region:     {}", sec.name);
+        }
         println!(
             "Version (control):    image={}, software={}",
             appliance
