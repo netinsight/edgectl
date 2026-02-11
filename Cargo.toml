@@ -8,8 +8,8 @@ edition = "2021"
 anyhow = "1.0.100"
 # Disable default features to reduce transistive dependencies
 chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
-clap = "4.5.51"
-clap_complete = { version = "4.5.62", features = ["unstable-dynamic"] }
+clap = "4.5.54"
+clap_complete = { version = "4.5.65", features = ["unstable-dynamic"] }
 dirs = "6.0"
 humantime = "2.1"
 openssl = { version = "0.10.75", features = ["vendored"] } # vendor openssl to enable static builds
