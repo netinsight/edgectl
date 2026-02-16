@@ -5,7 +5,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.100"
+anyhow = "1.0.101"
 # Disable default features to reduce transistive dependencies
 chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
 clap = "4.5.54"
