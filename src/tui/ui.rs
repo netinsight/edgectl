@@ -147,11 +147,7 @@ fn draw_list_view(f: &mut Frame, app: &mut App, area: Rect) {
     let num_columns = columns.len();
     let column_spacing = num_columns.saturating_sub(1); // spaces between columns
     let usable_width = available_width.saturating_sub(column_spacing);
-    let col_width = if num_columns > 0 {
-        usable_width / num_columns
-    } else {
-        0
-    };
+    let col_width = usable_width.checked_div(num_columns).unwrap_or(0);
 
     // Calculate visible rows and apply scroll offset
     let visible_rows = (area.height.saturating_sub(3)) as usize; // subtract borders and header
