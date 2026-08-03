@@ -4,6 +4,7 @@ use crate::tui::resources::{
     clear_resource, delete_resource, fetch_resources, ResourceAction, ResourceItem, ResourceType,
 };
 use anyhow::Result;
+use ratatui_image::picker::Picker;
 use std::time::Instant;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,6 +41,7 @@ pub struct App {
     pub thumbnails: Vec<ThumbnailEntry>,
     pub inactive_channels: Vec<u32>,
     pub config: Config,
+    picker: Picker,
 }
 
 impl App {
@@ -64,6 +66,7 @@ impl App {
             thumbnails: Vec::new(),
             inactive_channels: Vec::new(),
             config: Config::load(),
+            picker: Picker::halfblocks(),
         };
 
         app.refresh_data()?;
@@ -390,9 +393,15 @@ impl App {
         self.auto_refresh_enabled = !self.auto_refresh_enabled;
     }
 
+    /// Probe the terminal for graphics support. This writes escape queries to stdout and reads
+    /// the replies from stdin, so it must run after entering the alternate screen but before the
+    /// event loop starts reading events - otherwise it corrupts the screen and steals input.
+    pub fn query_picker(&mut self) {
+        self.picker = Picker::from_query_stdio().unwrap_or_else(|_| Picker::halfblocks());
+    }
+
     pub fn fetch_thumbnail_for_current_item(&mut self) {
         use crate::edge::{Input, ThumbnailMode};
-        use ratatui_image::picker::Picker;
 
         self.thumbnails.clear();
         self.inactive_channels.clear();
@@ -413,9 +422,7 @@ impl App {
                 let path = format!("thumb/{}", input.id);
                 if let Some(bytes) = self.client.fetch_thumbnail(&path) {
                     if let Ok(img) = image::load_from_memory(&bytes) {
-                        let picker =
-                            Picker::from_query_stdio().unwrap_or_else(|_| Picker::halfblocks());
-                        let protocol = picker.new_resize_protocol(img);
+                        let protocol = self.picker.new_resize_protocol(img);
                         self.thumbnails.push(ThumbnailEntry {
                             protocol,
                             channel_id: None,
@@ -430,9 +437,7 @@ impl App {
                         let path = format!("thumbnailer/{}", channel.channel_id);
                         if let Some(bytes) = self.client.fetch_thumbnail(&path) {
                             if let Ok(img) = image::load_from_memory(&bytes) {
-                                let picker = Picker::from_query_stdio()
-                                    .unwrap_or_else(|_| Picker::halfblocks());
-                                let protocol = picker.new_resize_protocol(img);
+                                let protocol = self.picker.new_resize_protocol(img);
                                 self.thumbnails.push(ThumbnailEntry {
                                     protocol,
                                     channel_id: Some(channel.channel_id),
