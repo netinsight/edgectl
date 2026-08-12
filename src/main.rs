@@ -13,6 +13,7 @@ mod input;
 mod kubernetes;
 mod login;
 mod node;
+mod operator;
 mod output;
 mod output_list;
 mod region;
@@ -43,6 +44,7 @@ fn main() {
         Some(("group-list", subcmd)) => group_list::run(subcmd),
         Some(("region", subcmd)) => region::run(subcmd),
         Some(("node", subcmd)) => node::run(subcmd),
+        Some(("operator", subcmd)) => operator::run(subcmd),
         Some(("tunnel", subcmd)) => tunnels::run(subcmd),
         Some(("settings", subcmd)) => settings::run(subcmd),
         Some(("health", subcmd)) => health::run(subcmd),

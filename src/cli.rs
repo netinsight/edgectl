@@ -7,6 +7,7 @@ use crate::health;
 use crate::input;
 use crate::login;
 use crate::node;
+use crate::operator;
 use crate::output;
 use crate::output_list;
 use crate::region;
@@ -30,6 +31,7 @@ pub(crate) fn build() -> Command {
         .subcommand(group_list::subcommand())
         .subcommand(region::subcommand())
         .subcommand(node::subcommand())
+        .subcommand(operator::subcommand())
         .subcommand(tunnels::subcommand())
         .subcommand(settings::subcommand())
         .subcommand(health::subcommand())
