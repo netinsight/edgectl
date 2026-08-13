@@ -74,14 +74,14 @@ pub(crate) fn run(subcmd: &ArgMatches) {
 
 /// Resolves the id of the group to act in: either the named group, or the group of the user in the
 /// current context.
-pub(crate) fn resolve(client: &EdgeClient, name: Option<&String>) -> anyhow::Result<String> {
+pub(crate) fn resolve(client: &EdgeClient, name: Option<&str>) -> anyhow::Result<String> {
     if let Some(name) = name {
         let groups = client
             .find_groups(name)
             .context("Failed to look up group")?;
         return groups
             .into_iter()
-            .find(|g| &g.name == name)
+            .find(|g| g.name == name)
             .map(|g| g.id)
             .ok_or_else(|| anyhow!("Group '{}' not found", name));
     }

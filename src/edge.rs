@@ -1843,11 +1843,12 @@ impl EdgeClient {
         Ok(res.json::<SecretResp>()?.secret)
     }
 
-    /// Creates a single-use, time-limited secret that an edge appliance uses to register itself.
-    pub fn create_appliance_token(&self, group_id: &str) -> Result<String, EdgeError> {
+    /// Creates a single-use, time-limited secret that an appliance uses to register itself. The
+    /// realm is either `edge` or `core`; core secrets require a super user and the system group.
+    pub fn create_appliance_token(&self, group_id: &str, realm: &str) -> Result<String, EdgeError> {
         #[derive(Serialize)]
-        struct ApplianceTokenInit {
-            realm: &'static str,
+        struct ApplianceTokenInit<'a> {
+            realm: &'a str,
         }
 
         #[derive(Deserialize)]
@@ -1862,7 +1863,7 @@ impl EdgeClient {
                 self.url, group_id
             ))
             .header("content-type", "application/json")
-            .json(&ApplianceTokenInit { realm: "edge" })
+            .json(&ApplianceTokenInit { realm })
             .send()?
             .error_if_not_success()?;
 

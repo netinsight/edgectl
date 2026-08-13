@@ -71,9 +71,16 @@ pub(crate) fn subcommand() -> clap::Command {
         .subcommand(
             Command::new("token")
                 .about("Create a single-use secret for registering an appliance")
+                .arg(
+                    Arg::new("type")
+                        .long("type")
+                        .value_parser(["edge", "core"])
+                        .default_value("edge")
+                        .help("The kind of appliance the secret is for"),
+                )
                 .arg(Arg::new("group")
                     .long("group")
-                    .help("The group to create the secret for (defaults to the group of the current user)"),
+                    .help("The group to create the secret for (defaults to the group of the current user, or the system group for core appliances)"),
                 ),
         )
         .subcommand(
@@ -165,7 +172,12 @@ pub(crate) fn run(subcmd: &ArgMatches) {
         }
         Some(("token", args)) => {
             let client = new_client();
-            if let Err(e) = token(&client, args.get_one::<String>("group")) {
+            let realm = args
+                .get_one::<String>("type")
+                .map(|s| s.as_str())
+                .expect("Appliance type has a default value");
+            let group = args.get_one::<String>("group").map(|s| s.as_str());
+            if let Err(e) = token(&client, realm, group) {
                 eprintln!("{:#}", e);
                 process::exit(1);
             }
@@ -517,10 +529,13 @@ fn update(
     }
 }
 
-fn token(client: &EdgeClient, group: Option<&String>) -> anyhow::Result<()> {
-    let group = group::resolve(client, group)?;
+fn token(client: &EdgeClient, realm: &str, group: Option<&str>) -> anyhow::Result<()> {
+    // Core secrets are only accepted for the system group
+    let default_group = (realm == "core").then_some("system");
+    let group = group::resolve(client, group.or(default_group))?;
+
     let token = client
-        .create_appliance_token(&group)
+        .create_appliance_token(&group, realm)
         .context("Failed to create an appliance token")?;
 
     println!("{}", token);
