@@ -8,8 +8,8 @@ use crate::edge::{
     new_client, Appliance, ApplianceHealthState, AppliancePortType, EdgeClient, RegionReference,
     UpdateAppliancePayload,
 };
-use crate::group;
 use crate::{green, red};
+use crate::{group, register};
 
 pub(crate) fn subcommand() -> clap::Command {
     Command::new("appliance")
@@ -83,6 +83,7 @@ pub(crate) fn subcommand() -> clap::Command {
                     .help("The group to create the secret for (defaults to the group of the current user, or the system group for core appliances)"),
                 ),
         )
+        .subcommand(register::subcommand())
         .subcommand(
             Command::new("update")
                 .about("Update appliance settings")
@@ -182,6 +183,7 @@ pub(crate) fn run(subcmd: &ArgMatches) {
                 process::exit(1);
             }
         }
+        Some(("register", args)) => register::run(args),
         Some(("update", args)) => {
             let client = new_client();
             let name = args

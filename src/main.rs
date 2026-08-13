@@ -17,6 +17,7 @@ mod operator;
 mod output;
 mod output_list;
 mod region;
+mod register;
 mod settings;
 mod token;
 mod tui;
