@@ -532,9 +532,7 @@ fn update(
 }
 
 fn token(client: &EdgeClient, realm: &str, group: Option<&str>) -> anyhow::Result<()> {
-    // Core secrets are only accepted for the system group
-    let default_group = (realm == "core").then_some("system");
-    let group = group::resolve(client, group.or(default_group))?;
+    let group = group::resolve_for_appliance_token(client, realm, group)?;
 
     let token = client
         .create_appliance_token(&group, realm)

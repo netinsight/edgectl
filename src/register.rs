@@ -27,12 +27,19 @@ pub(crate) fn subcommand() -> Command {
                 .help("The name to register the appliance as (defaults to its hostname)"),
         )
         .arg(
+            Arg::new("type")
+                .long("type")
+                .value_parser(["edge", "core"])
+                .default_value("edge")
+                .help("The kind of appliance to register it as"),
+        )
+        .arg(
             Arg::new("region")
                 .long("region")
                 .help("The region to register the appliance in (defaults to the default region)"),
         )
         .arg(Arg::new("group").long("group").help(
-            "The group to register the appliance in (defaults to the group of the current user)",
+            "The group to register the appliance in (defaults to the group of the current user, or the system group for core appliances)",
         ))
         .arg(
             Arg::new("username")
@@ -76,9 +83,18 @@ fn register(args: &ArgMatches) -> anyhow::Result<()> {
     let version = appliance.version()?;
     eprintln!("Found edge-os {} at {}", version.os_version, url);
 
+    let realm = args
+        .get_one::<String>("type")
+        .map(|s| s.as_str())
+        .expect("Appliance type has a default value");
+
     let client = new_client();
     let edge_url = client.url.trim_end_matches('/').to_owned();
-    let group = group::resolve(&client, args.get_one::<String>("group").map(|s| s.as_str()))?;
+    let group = group::resolve_for_appliance_token(
+        &client,
+        realm,
+        args.get_one::<String>("group").map(|s| s.as_str()),
+    )?;
     let region = args.get_one::<String>("region");
     if let Some(region) = region {
         ensure_region_exists(&client, region)?;
@@ -104,14 +120,14 @@ fn register(args: &ArgMatches) -> anyhow::Result<()> {
     };
 
     let secret = client
-        .create_appliance_token(&group, "edge")
+        .create_appliance_token(&group, realm)
         .context("Failed to create an appliance token")?;
 
     appliance.set_management_config(&ManagementConfig {
         edge_url: &edge_url,
         device_name: &name,
         secret: &secret,
-        edge_role: "edge",
+        edge_role: realm,
         region: region.map(String::as_str),
         allow_self_signed_certs: args.get_flag("allow-self-signed"),
     })?;
@@ -449,5 +465,27 @@ impl ApplianceClient {
             .unwrap_or_else(|_| status.to_string());
 
         Err(anyhow!("{}: {}", context, message))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_serializes_the_management_config() {
+        let config = ManagementConfig {
+            edge_url: "https://edge.example.com",
+            device_name: "vt-233",
+            secret: "1e7bcf1a-9e19-4d84-a3f9-d2d0b3a4e8c1",
+            edge_role: "core",
+            region: None,
+            allow_self_signed_certs: false,
+        };
+
+        assert_eq!(
+            serde_json::to_string(&config).expect("Failed to serialize management config"),
+            r#"{"edgeUrl":"https://edge.example.com","deviceName":"vt-233","secret":"1e7bcf1a-9e19-4d84-a3f9-d2d0b3a4e8c1","edgeRole":"core","allowSelfSignedCerts":false}"#
+        );
     }
 }

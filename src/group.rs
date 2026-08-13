@@ -106,6 +106,16 @@ pub(crate) fn resolve(client: &EdgeClient, name: Option<&str>) -> anyhow::Result
         })
 }
 
+/// Resolves the group to create an appliance secret in. Core secrets are only accepted for the
+/// system group, so they default there rather than to the group of the current user.
+pub(crate) fn resolve_for_appliance_token(
+    client: &EdgeClient,
+    realm: &str,
+    name: Option<&str>,
+) -> anyhow::Result<String> {
+    resolve(client, name.or((realm == "core").then_some("system")))
+}
+
 fn list(client: EdgeClient) {
     let groups = client.list_groups().expect("Failed to fetch group list");
 
