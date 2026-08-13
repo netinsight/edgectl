@@ -8,6 +8,7 @@ use crate::edge::{
     new_client, Appliance, ApplianceHealthState, AppliancePortType, EdgeClient, RegionReference,
     UpdateAppliancePayload,
 };
+use crate::group;
 use crate::{green, red};
 
 pub(crate) fn subcommand() -> clap::Command {
@@ -66,6 +67,14 @@ pub(crate) fn subcommand() -> clap::Command {
                     .required(true)
                     .help("The name of the appliance"),
             ),
+        )
+        .subcommand(
+            Command::new("token")
+                .about("Create a single-use secret for registering an appliance")
+                .arg(Arg::new("group")
+                    .long("group")
+                    .help("The group to create the secret for (defaults to the group of the current user)"),
+                ),
         )
         .subcommand(
             Command::new("update")
@@ -153,6 +162,13 @@ pub(crate) fn run(subcmd: &ArgMatches) {
                 .map(|s| s.as_str())
                 .expect("Appliance name is mandatory");
             restart(client, name)
+        }
+        Some(("token", args)) => {
+            let client = new_client();
+            if let Err(e) = token(&client, args.get_one::<String>("group")) {
+                eprintln!("{:#}", e);
+                process::exit(1);
+            }
         }
         Some(("update", args)) => {
             let client = new_client();
@@ -499,6 +515,16 @@ fn update(
         eprintln!("Failed to update appliance: {}", e);
         process::exit(1);
     }
+}
+
+fn token(client: &EdgeClient, group: Option<&String>) -> anyhow::Result<()> {
+    let group = group::resolve(client, group)?;
+    let token = client
+        .create_appliance_token(&group)
+        .context("Failed to create an appliance token")?;
+
+    println!("{}", token);
+    Ok(())
 }
 
 fn get_region(client: &EdgeClient, name: &str) -> crate::edge::Region {

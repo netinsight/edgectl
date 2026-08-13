@@ -1,8 +1,10 @@
-use std::process;
+use std::{env, process};
 
+use anyhow::{anyhow, Context};
 use clap::{Arg, ArgMatches, Command};
 use tabled::{builder::Builder, settings::Style};
 
+use crate::config::Config;
 use crate::edge::{new_client, EdgeClient, Group, NewGroup};
 
 pub(crate) fn subcommand() -> clap::Command {
@@ -68,6 +70,40 @@ pub(crate) fn run(subcmd: &ArgMatches) {
         }
         _ => unreachable!("subcommand_required prevents `None` or other options"),
     }
+}
+
+/// Resolves the id of the group to act in: either the named group, or the group of the user in the
+/// current context.
+pub(crate) fn resolve(client: &EdgeClient, name: Option<&String>) -> anyhow::Result<String> {
+    if let Some(name) = name {
+        let groups = client
+            .find_groups(name)
+            .context("Failed to look up group")?;
+        return groups
+            .into_iter()
+            .find(|g| &g.name == name)
+            .map(|g| g.id)
+            .ok_or_else(|| anyhow!("Group '{}' not found", name));
+    }
+
+    let username = env::var("EDGE_USER")
+        .ok()
+        .or_else(|| {
+            Config::load()
+                .get_current_context()
+                .map(|c| c.username.clone())
+        })
+        .unwrap_or_else(|| "admin".to_owned());
+
+    client
+        .get_user_group(&username)
+        .context("Failed to look up the group of the current user")?
+        .ok_or_else(|| {
+            anyhow!(
+                "Failed to determine the group of user '{}', pass --group",
+                username
+            )
+        })
 }
 
 fn list(client: EdgeClient) {

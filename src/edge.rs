@@ -1843,6 +1843,70 @@ impl EdgeClient {
         Ok(res.json::<SecretResp>()?.secret)
     }
 
+    /// Creates a single-use, time-limited secret that an edge appliance uses to register itself.
+    pub fn create_appliance_token(&self, group_id: &str) -> Result<String, EdgeError> {
+        #[derive(Serialize)]
+        struct ApplianceTokenInit {
+            realm: &'static str,
+        }
+
+        #[derive(Deserialize)]
+        struct ApplianceTokenResp {
+            token: String,
+        }
+
+        let res = self
+            .client
+            .post(format!(
+                "{}/api/group/{}/appliance-token",
+                self.url, group_id
+            ))
+            .header("content-type", "application/json")
+            .json(&ApplianceTokenInit { realm: "edge" })
+            .send()?
+            .error_if_not_success()?;
+
+        Ok(res.json::<ApplianceTokenResp>()?.token)
+    }
+
+    pub fn get_user_group(&self, username: &str) -> Result<Option<String>, EdgeError> {
+        #[derive(Serialize)]
+        struct UserFilter {
+            username: String,
+        }
+
+        #[derive(Deserialize)]
+        struct User {
+            group: String,
+        }
+
+        #[derive(Deserialize)]
+        struct UserListResp {
+            items: Vec<User>,
+        }
+
+        let query = EdgeQuery {
+            filter: UserFilter {
+                username: username.to_owned(),
+            },
+        };
+        let query = serde_json::to_string(&query).expect("Failed to serialize filter as JSON");
+
+        let res = self
+            .client
+            .get(format!(r#"{}/api/user/?q={}"#, self.url, query))
+            .header("content-type", "application/json")
+            .send()?
+            .error_if_not_success()?;
+
+        Ok(res
+            .json::<UserListResp>()?
+            .items
+            .into_iter()
+            .next()
+            .map(|u| u.group))
+    }
+
     pub fn create_group(&self, group: NewGroup) -> Result<Group, EdgeError> {
         let res = self
             .client
