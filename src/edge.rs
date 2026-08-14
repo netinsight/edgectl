@@ -2001,6 +2001,7 @@ impl EdgeClient {
     pub fn restart_appliance(&self, id: &str) -> Result<(), EdgeError> {
         self.client
             .post(format!("{}/api/appliance/{}/restart", self.url, id))
+            .json(&serde_json::json!({}))
             .send()?
             .error_if_not_success()
             .map(|_| ())
