@@ -30,7 +30,7 @@ ratatui = "=0.30.0"
 ratatui-core = "=0.1.0"
 rpassword = "7.3"
 crossterm = "0.29.0"
-serde-saphyr = "0.0.11"
+serde-saphyr = "1.0.1"
 unicode-width = "0.2.0"
 gethostname = "1.1.0"
 ratatui-image = { version = "10.0", default-features = false, features = ["crossterm"] }
