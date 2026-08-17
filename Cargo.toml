@@ -27,7 +27,7 @@ uuid = { version = "1.21.0", features = [ "v4" ] }
 # ratatui accepts ratatui-core "0.1.0" as a caret range, so ratatui-core needs pinning directly.
 # Unpin both once #2685 is fixed.
 ratatui = "=0.30.0"
-ratatui-core = "=0.1.0"
+ratatui-core = "=0.1.2"
 rpassword = "7.3"
 crossterm = "0.29.0"
 serde-saphyr = "0.0.11"
